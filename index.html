@@ -1909,12 +1909,25 @@
         if (lib && typeof lib.fairyDustCursor === 'function') {
             try {
                 state.cursorEffect = new lib.fairyDustCursor({
-                    colors: ["#ffffff"]
+                    colors: ["#000000"]
                 });
             } catch (e) {}
             return;
         }
         setTimeout(initCursorEffect, 500);
+    }
+    if (!window.matchMedia_orig) {
+        window.matchMedia_orig = window.matchMedia;
+        Object.defineProperty(window, 'matchMedia', {
+            value: function(query) {
+                // отключаем prefers-reduced-motion для cursor-effects
+                if (query === '(prefers-reduced-motion: reduce)') {
+                    return { matches: false, media: query };
+                }
+                // остальные запросы работают как обычно
+                return window.matchMedia_orig(query);
+            }
+        });
     }
 
     function refreshEdgeZones() {
