@@ -843,9 +843,6 @@
         }
 
         .remove-card-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
             padding: 4px 8px;
             background: rgba(255, 58, 47, 0.9);
             border: 1px solid rgba(255, 58, 47, 1);
@@ -854,7 +851,6 @@
             font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
-            z-index: 10;
         }
 
         .remove-card-btn:hover {
@@ -939,6 +935,96 @@
 
         .confirm-cancel:hover {
             background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Sorting buttons and rating gradients */
+        .sort-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 0 8px rgba(255,255,255,0.4);
+        }
+
+        .sort-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 0 16px rgba(255,255,255,0.45);
+        }
+
+        .sort-btn.active {
+            background: linear-gradient(135deg, #ffffff 0%, #eaeaea 100%);
+            border-color: #ffffff;
+            color: #000;
+            box-shadow: 0 0 26px rgba(255, 255, 255, 0.85), 0 0 8px rgba(255,255,255,0.55) inset;
+            text-shadow: none;
+        }
+
+        .sort-btn svg {
+            width: 20px;
+            height: 20px;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.35));
+        }
+
+        /* Vertical alignment tweaks */
+        .sort-btn[data-dir="desc"] svg { transform: translateY(0px); }
+        .sort-btn[data-dir="asc"] svg { transform: translateY(0px); }
+
+        .card-rating.gold {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            filter: drop-shadow(0 0 10px #ffd700);
+        }
+
+        .card-rating.green {
+            color: #4ade80;
+            text-shadow: 0 0 24px rgba(74, 222, 128, 0.9);
+        }
+
+        .card-rating.yellow {
+            color: #fbbf24;
+            text-shadow: 0 0 24px rgba(251, 191, 36, 0.9);
+        }
+
+        .card-rating.red {
+            color: #f87171;
+            text-shadow: 0 0 24px rgba(248, 113, 113, 0.9);
+        }
+
+        .card-rating.white {
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.85), 0 0 40px rgba(255,255,255,0.35);
+            filter: none;
+            -webkit-text-fill-color: #ffffff;
+        }
+
+        .edit-card-btn {
+            padding: 4px 8px;
+            background: rgba(57, 158, 255, 0.9);
+            border: 1px solid rgba(57, 158, 255, 1);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .edit-card-btn:hover {
+            background: rgba(57, 158, 255, 1);
+            box-shadow: 0 0 12px rgba(57, 158, 255, 0.6);
         }
 
         .tab-card p {
@@ -1794,11 +1880,12 @@
         </div>
 
         <div id="cardEditPanel" style="display:none; margin: 12px 0 8px; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;">
+            <input id="cardIdEdit" type="hidden">
             <input id="cardTitleEdit" type="text" maxlength="64" placeholder="Название карточки" style="width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.3); color:#fff; margin-bottom:10px;">
             <input id="cardImgEdit" type="file" accept="image/*" style="color:#fff; margin-bottom:10px;">
             <input id="cardRatingEdit" type="number" min="0" max="10" step="0.1" placeholder="Оценка (0-10)" style="width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.3); color:#fff; margin-bottom:10px;" oninput="this.value = Math.min(10, Math.max(0, parseFloat(this.value) || 0));">
             <div style="display:flex; gap:10px;">
-                <button id="saveCardEditBtn" type="button" class="cabinet-ghost-btn">Добавить карточку</button>
+                <button id="saveCardEditBtn" type="button" class="cabinet-ghost-btn"><span id="saveCardBtnText">Добавить карточку</span></button>
                 <button id="closeCardEditBtn" type="button" class="cabinet-ghost-btn">Отмена</button>
             </div>
         </div>
@@ -1808,7 +1895,17 @@
         </div>
 
         <div class="tab-toolbar">
-            <span>Просмотрено: <span id="cardsCount">0</span></span>
+            <div>
+                <span>Просмотрено: <span id="cardsCount">0</span></span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="sort-btn" id="sortDesc" data-dir="desc" aria-label="Сортировать по убыванию">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8l5 5H7z"/></svg>
+                </button>
+                <button class="sort-btn" id="sortAsc" data-dir="asc" aria-label="Сортировать по возрастанию">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 16L7 11h10z"/></svg>
+                </button>
+            </div>
         </div>
 
         <div class="cabinet-content" id="cabinetContent"></div>
@@ -1900,7 +1997,9 @@
         dynamicTabCounter: 0,
         activeTab: 'anime',
         isAdmin: false,
-        viewsInterval: null
+        viewsInterval: null,
+        currentSortMode: 'desc',
+        editingCardId: null
     };
 
     function initCursorEffect() {
@@ -2385,14 +2484,26 @@
 
     let __currentEditingCardTabId = null;
 
-    function openCardEditor(tabId) {
+    function openCardEditor(tabId, cardData = null) {
         __currentEditingCardTabId = tabId;
+        state.editingCardId = cardData ? cardData.id : null;
         if (!elements.cardEditPanel) return;
         elements.cardEditPanel.style.display = 'block';
+        const titleInput = document.getElementById('cardTitleEdit');
+        const imgInput = document.getElementById('cardImgEdit');
+        const ratingInput = document.getElementById('cardRatingEdit');
+        const btnText = document.getElementById('saveCardBtnText');
+        if (cardData) {
+            if (titleInput) titleInput.value = cardData.title || '';
+            if (ratingInput) ratingInput.value = cardData.rating || '';
+            if (btnText) btnText.textContent = 'Сохранить изменения';
+        } else {
+            if (titleInput) titleInput.value = '';
+            if (imgInput) imgInput.value = '';
+            if (ratingInput) ratingInput.value = '';
+            if (btnText) btnText.textContent = 'Добавить карточку';
+        }
         try { elements.cardEditPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e) {}
-        if (elements.cardTitleEdit) elements.cardTitleEdit.value = '';
-        if (elements.cardImgEdit) elements.cardImgEdit.value = '';
-        if (elements.cardRatingEdit) elements.cardRatingEdit.value = '';
     }
 
     function closeCardEditor() {
@@ -2407,33 +2518,39 @@
         let rating = parseFloat(elements.cardRatingEdit?.value) || 0;
         if (rating < 0) rating = 0;
         if (rating > 10) rating = 10;
-        const imageBase64 = await fileToBase64(elements.cardImgEdit?.files?.[0]);
+
+        const imageFile = elements.cardImgEdit?.files?.[0];
+        let imageBase64 = '';
+        if (imageFile) {
+            imageBase64 = await fileToBase64(imageFile);
+        }
 
         try {
-            const response = await fetch(API_URL + '/api/add-card', {
+            const endpoint = state.editingCardId ? '/api/update-card' : '/api/add-card';
+            const body = {
+                tab_id: __currentEditingCardTabId,
+                title,
+                rating: rating.toString(),
+                admin: window.adminToken || ''
+            };
+            if (state.editingCardId) body.id = state.editingCardId;
+            if (imageBase64) body.image = imageBase64;
+
+            const response = await fetch(API_URL + endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tab_id: __currentEditingCardTabId,
-                    title,
-                    image: imageBase64,
-                    rating: rating.toString(),
-                    admin: window.adminToken || ''
-                })
+                body: JSON.stringify(body)
             });
 
             if (response.ok) {
                 const tabId = __currentEditingCardTabId;
                 closeCardEditor();
+                state.editingCardId = null;
                 await new Promise(resolve => setTimeout(resolve, 300));
                 await loadCardsForTab(tabId);
-                const panel = document.querySelector(`.tab-panel[data-tab="${tabId}"]`);
-                if (panel && !panel.classList.contains('active')) {
-                    setActiveTab(tabId);
-                }
             }
         } catch (e) {
-            console.error('Failed to add card:', e);
+            console.error('Failed to save card:', e);
         }
     }
 
@@ -2522,22 +2639,51 @@
         if (countEl) countEl.textContent = cards.length;
 
         if (cards.length === 0) {
-            container.innerHTML = '<div class="empty-state">Нет карточек. Добавьте первую!</div>';
+            container.innerHTML = '<div class="empty-state">Автор долбаеб</div>';
             return;
         }
-        cards.forEach(card => {
+
+        let sortedCards = [...cards];
+        if (state.currentSortMode === 'desc') {
+            sortedCards.sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
+        } else if (state.currentSortMode === 'asc') {
+            sortedCards.sort((a, b) => (parseFloat(a.rating) || 0) - (parseFloat(b.rating) || 0));
+        }
+
+        sortedCards.forEach(card => {
             const cardEl = document.createElement('article');
             cardEl.className = 'tab-card';
-            const rating = card.rating || '0';
+            const rating = parseFloat(card.rating) || 0;
+            const ratingStr = card.rating || '0';
+            let ratingClass = '';
+            if (rating >= 7) ratingClass = 'white';
+            else if (rating >= 5) ratingClass = 'yellow';
+            else ratingClass = 'red';
+
             cardEl.innerHTML = `
-                                <div class="tab-card-img-wrapper">
-                                    ${card.image ? `<img src="data:image/jpeg;base64,${card.image}" alt="${card.title}">` : ''}
-                                    <div class="card-rating">${rating}/10</div>
-                                </div>
-                                <h4>${card.title}</h4>
-                                ${state.isAdmin ? `<button class="remove-card-btn" data-id="${card.id}" data-tabid="${tabId}">✖</button>` : ''}
-                            `;
+                <div class="tab-card-img-wrapper">
+                    ${card.image ? `<img src="data:image/jpeg;base64,${card.image}" alt="${card.title}">`  : ''}
+                    <div class="card-rating ${ratingClass}">${ratingStr}/10</div>
+                </div>
+                <h4>${card.title}</h4>
+                ${state.isAdmin ? `
+                    <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 10;">
+                        <button class="edit-card-btn" data-id="${card.id}" data-tabid="${tabId}">✏️</button>
+                        <button class="remove-card-btn" data-id="${card.id}" data-tabid="${tabId}">✖</button>
+                    </div>
+                ` : ''}
+            `;
             container.appendChild(cardEl);
+        });
+
+        container.querySelectorAll('.edit-card-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (!state.isAdmin) return;
+                const cardId = btn.dataset.id;
+                const card = cards.find(c => String(c.id) === String(cardId));
+                if (card) openCardEditor(tabId, card);
+            };
         });
 
         container.querySelectorAll('.remove-card-btn').forEach(btn => {
@@ -2744,6 +2890,29 @@
     document.getElementById('closeTabEditBtn')?.addEventListener('click', () => { closeTabEditPanel(); });
     document.getElementById('saveCardEditBtn')?.addEventListener('click', () => { saveCardEdit(); });
     document.getElementById('closeCardEditBtn')?.addEventListener('click', () => { closeCardEditor(); });
+
+    // Sorting controls
+    document.getElementById('sortDesc')?.addEventListener('click', function() {
+        state.currentSortMode = state.currentSortMode === 'desc' ? 'default' : 'desc';
+        updateSortButtons();
+        loadCardsForTab(state.activeTab);
+    });
+
+    document.getElementById('sortAsc')?.addEventListener('click', function() {
+        state.currentSortMode = state.currentSortMode === 'asc' ? 'default' : 'asc';
+        updateSortButtons();
+        loadCardsForTab(state.activeTab);
+    });
+
+    function updateSortButtons() {
+        const descBtn = document.getElementById('sortDesc');
+        const ascBtn = document.getElementById('sortAsc');
+        if (descBtn) descBtn.classList.toggle('active', state.currentSortMode === 'desc');
+        if (ascBtn) ascBtn.classList.toggle('active', state.currentSortMode === 'asc');
+    }
+
+    // Ensure default active highlight
+    updateSortButtons();
 
     let ezState = { e: false, z: false };
     document.addEventListener('keydown', function(e){
