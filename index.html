@@ -9,8 +9,9 @@
 
     <!-- CSS Styles -->
     <script src="https://unpkg.com/cursor-effects@latest/dist/browser.js"></script>
-  <script type="module" crossorigin src="/assets/index-BfrHc9r1.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-y0G9zhLR.css">
+    <script src="/assets/entrance-guard.js"></script>
+  <script type="module" crossorigin src="/assets/index-B5jp-R-g.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-C3M4cK_U.css">
 </head>
 
 <body>
@@ -42,8 +43,8 @@
         </svg>
     </button>
 
-    <video muted loop id="background-video" style="display: none;">
-        <source src="/background.mp4" type="video/mp4">
+    <video muted loop preload="auto" id="background-video" style="display: block; visibility: hidden;">
+        <source src="/media/video/background.mp4" type="video/mp4">
     </video>
 
     <div class="welcome-screen" id="welcomeScreen">
@@ -55,50 +56,50 @@
     <div class="main-page" id="mainPage">
         <div class="tilt-wrapper" id="mainContent">
             <div class="card-banner">
-                <img src="/ai.png" alt="AI Banner">
+                <img src="/media/images/ai-banner.png" alt="AI Banner">
             </div>
             <div class="container">
                 <div class="photo-container">
-                    <img src="/profile.jpg" alt="Profile Picture">
+                    <img src="/media/images/profile.jpg" alt="Profile Picture">
                 </div>
                 <h1 class="neon-text">onlyv1be</h1>
                 <p class="tagline">Strong Senior Fullstack Developer</p>
                 <div class="button-container">
                     <a href="https://discord.com/users/953378430362189864" target="_blank" rel="noopener noreferrer"
                         class="round-button" aria-label="Discord Profile">
-                        <img src="/icon1.jpg" alt="Discord">
+                        <img src="/media/images/discord.jpg" alt="Discord">
                         <div class="tooltip">Discord</div>
                     </a>
                     <a href="https://github.com/onlyv1be" target="_blank" rel="noopener noreferrer" class="round-button"
                         aria-label="GitHub Profile">
-                        <img src="/icon2.jpg" alt="GitHub">
+                        <img src="/media/images/github.jpg" alt="GitHub">
                         <div class="tooltip">GitHub</div>
                     </a>
                     <a href="https://steamcommunity.com/id/Allfickshion" target="_blank" rel="noopener noreferrer"
                         class="round-button" aria-label="Steam Profile">
-                        <img src="/icon3.jpg" alt="Steam">
+                        <img src="/media/images/steam.jpg" alt="Steam">
                         <div class="tooltip">Steam</div>
                     </a>
                 </div>
             </div>
-        </div>
 
-        <div class="viewers-counter" id="viewersCounter">
-            <span id="viewsValue">0</span>
-            <svg class="eye" width="16" height="16" viewBox="0 0 24 24" style="vertical-align: middle;">
-                <ellipse cx="12" cy="12" rx="10" ry="5" fill="none" stroke="#fff" stroke-width="2"
-                    filter="url(#glow)" />
-                <circle cx="12" cy="12" r="2.7" fill="#fff" filter="url(#glow)" />
-                <defs>
-                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-            </svg>
+            <div class="viewers-counter" id="viewersCounter">
+                <span id="viewsValue">0</span>
+                <svg class="eye" width="16" height="16" viewBox="0 0 24 24" style="vertical-align: middle;">
+                    <ellipse cx="12" cy="12" rx="10" ry="5" fill="none" stroke="#fff" stroke-width="2"
+                        filter="url(#glow)" />
+                    <circle cx="12" cy="12" r="2.7" fill="#fff" filter="url(#glow)" />
+                    <defs>
+                        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                </svg>
+            </div>
         </div>
     </div>
 
@@ -220,7 +221,7 @@
         </div>
     </div>
 
-    <audio id="backgroundMusic" src="/music.mp3" preload="auto" loop></audio>
+    <audio id="backgroundMusic" src="/media/audio/background.mp3" preload="auto" loop></audio>
 
 </body>
 
