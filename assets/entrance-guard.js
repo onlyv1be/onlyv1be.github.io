@@ -1,6 +1,29 @@
 (() => {
   'use strict';
 
+  // Admin access lasts only until the page is reloaded.
+  sessionStorage.removeItem('onlyv1be-admin-token');
+
+  // Do not let an unavailable API leave the UI waiting forever.
+  if (!window.__onlyv1beFetchGuard) {
+    window.__onlyv1beFetchGuard = true;
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (resource, options = {}) => {
+      const url = typeof resource === 'string' ? resource : resource?.url || '';
+      if (!url.startsWith('https://oxae.run.place/')) return nativeFetch(resource, options);
+
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 7000);
+      if (options.signal) {
+        if (options.signal.aborted) controller.abort();
+        else options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
+
+      return nativeFetch(resource, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timeout));
+    };
+  }
+
   const ROOT_CLASS = 'entrance-pending';
   const ACTIVE_CLASS = 'entrance-complete';
   const guardedIds = new Set([

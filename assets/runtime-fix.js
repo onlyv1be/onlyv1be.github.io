@@ -24,10 +24,35 @@
   const adminLoginBlock = byId('adminLoginBlock');
   const adminPasswordInput = byId('adminPasswordInput');
   const adminGoBtn = byId('adminGoBtn');
+  const cabinetContent = byId('cabinetContent');
+  const cabinetTabs = byId('cabinetTabs');
+  const addTabButton = byId('addTabBtn');
 
   if (!cabinetPage || !mainPage || !slideBtn || !cabinetBackBtn || !music || !volumeIcon || !volumeSlider) {
     console.error('Runtime fix: required page elements are missing');
     return;
+  }
+
+  // The old fairy-dust cursor produces stray asterisks over the cabinet.
+  for (const effects of [window.cursoreffects, window.cursorEffects]) {
+    if (!effects?.fairyDustCursor) continue;
+    try {
+      effects.fairyDustCursor = class DisabledFairyDustCursor {};
+    } catch {
+      // The third-party object can be read-only in some builds.
+    }
+  }
+
+  document.querySelectorAll('.round-button').forEach((link) => {
+    link.addEventListener('pointerdown', () => link.classList.add('is-pressed'));
+    for (const eventName of ['pointerup', 'pointercancel', 'pointerleave']) {
+      link.addEventListener(eventName, () => link.classList.remove('is-pressed'));
+    }
+    link.addEventListener('click', (event) => event.stopPropagation());
+  });
+  if (addTabButton) {
+    addTabButton.textContent = 'Новая вкладка';
+    addTabButton.setAttribute('aria-label', 'Добавить новую вкладку');
   }
 
   const read = (key, fallback) => {
@@ -50,6 +75,7 @@
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   let cabinetHideTimer = 0;
   let cabinetPrepareTimer = 0;
+  let apiStateTimer = 0;
 
   const entranceIsComplete = () => (
     document.documentElement.classList.contains('entrance-complete')
@@ -66,6 +92,24 @@
       control.setAttribute('aria-hidden', String(!shouldShow));
     }
     if (!shouldShow) infoPanel?.classList.remove('visible');
+  };
+
+  const showApiState = () => {
+    if (!cabinetContent || cabinetContent.children.length > 0 || !cabinetPage.classList.contains('slide-in')) return;
+    const state = document.createElement('div');
+    state.className = 'cabinet-api-state';
+    state.innerHTML = '<strong>Карточки временно недоступны</strong><span>Сервер не ответил. Попробуй ещё раз.</span><button type="button">Повторить</button>';
+    state.querySelector('button').addEventListener('click', () => {
+      state.remove();
+      cabinetBackBtn.click();
+      window.setTimeout(() => slideBtn.click(), 760);
+    });
+    cabinetContent.append(state);
+  };
+
+  const scheduleApiState = () => {
+    clearTimeout(apiStateTimer);
+    apiStateTimer = window.setTimeout(showApiState, 7200);
   };
 
   const prepareCabinetEntrance = () => {
@@ -95,6 +139,7 @@
       edgeSwipeZone?.setAttribute('aria-hidden', 'true');
       edgeSwipeZoneLeft?.setAttribute('aria-hidden', 'false');
       setMainControlsVisible(false);
+      scheduleApiState();
       return;
     }
 
@@ -103,6 +148,7 @@
     edgeSwipeZone?.setAttribute('aria-hidden', 'false');
     edgeSwipeZoneLeft?.setAttribute('aria-hidden', 'true');
     setMainControlsVisible(true);
+    clearTimeout(apiStateTimer);
     cabinetHideTimer = window.setTimeout(() => {
       if (!cabinetPage.classList.contains('slide-in')) cabinetPage.style.display = 'none';
     }, 720);
@@ -121,6 +167,51 @@
     attributeFilter: ['class'],
   });
   applyCabinetState();
+
+  const enhanceCard = (card) => {
+    if (card.dataset.enhanced === 'true') return;
+    card.dataset.enhanced = 'true';
+
+    if (card.classList.contains('add-card')) {
+      card.innerHTML = '<span class="add-card-icon" aria-hidden="true">+</span><span class="add-card-label">Добавить карточку</span>';
+      card.setAttribute('aria-label', 'Добавить карточку');
+      return;
+    }
+
+    const image = card.querySelector('img');
+    const rating = card.querySelector('.tab-card-rating, .card-rating');
+    const title = card.querySelector('.tab-card-title');
+    if (image && image.parentElement === card) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tab-card-img-wrapper';
+      card.insertBefore(wrapper, image);
+      wrapper.append(image);
+      if (rating) {
+        rating.className = 'card-rating';
+        wrapper.append(rating);
+      }
+    }
+    if (title) title.classList.add('card-title');
+    card.tabIndex = 0;
+    card.setAttribute('aria-label', `${title?.textContent || 'Карточка'}, оценка ${rating?.textContent || '0'}`);
+  };
+
+  if (cabinetContent) {
+    const enhanceCards = () => {
+      const cards = cabinetContent.querySelectorAll('.tab-card');
+      if (cards.length) clearTimeout(apiStateTimer);
+      cards.forEach(enhanceCard);
+    };
+    new MutationObserver(enhanceCards).observe(cabinetContent, { childList: true, subtree: true });
+    enhanceCards();
+  }
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const message = String(event.reason?.message || event.reason || '');
+    if (!/fetch|abort|network|timeout/i.test(message)) return;
+    event.preventDefault();
+    showApiState();
+  });
 
   let touchStartX = null;
   document.addEventListener('pointerdown', (event) => {
@@ -305,6 +396,39 @@
     }
     renderVolume(value);
   }, true);
+
+  let volumePointerActive = false;
+  const updateVolumeFromPointer = (event) => {
+    const sliderRect = volumeSlider.getBoundingClientRect();
+    if (sliderRect.width <= 0) return false;
+    const controlRect = volumeControl.getBoundingClientRect();
+    const insideWideHitArea = (
+      event.clientX >= sliderRect.left - 10
+      && event.clientX <= sliderRect.right + 10
+      && event.clientY >= controlRect.top
+      && event.clientY <= controlRect.bottom
+    );
+    if (!insideWideHitArea) return false;
+
+    const value = clamp((event.clientX - sliderRect.left) / sliderRect.width, 0, 1);
+    volumeSlider.value = String(value);
+    volumeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  };
+
+  volumeControl.addEventListener('pointerdown', (event) => {
+    if (!updateVolumeFromPointer(event)) return;
+    volumePointerActive = true;
+    event.preventDefault();
+    volumeControl.setPointerCapture?.(event.pointerId);
+  }, true);
+  volumeControl.addEventListener('pointermove', (event) => {
+    if (!volumePointerActive) return;
+    updateVolumeFromPointer(event);
+  }, true);
+  for (const eventName of ['pointerup', 'pointercancel']) {
+    volumeControl.addEventListener(eventName, () => { volumePointerActive = false; }, true);
+  }
 
   const LAST_VIEWS_KEY = 'onlyv1be-last-views';
   const cachedViews = Number(read(LAST_VIEWS_KEY, Number(viewsValue?.textContent) || 0));
