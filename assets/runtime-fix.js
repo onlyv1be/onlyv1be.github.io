@@ -20,6 +20,10 @@
   const lowVolumeIcon = byId('lowVolumeIcon');
   const muteIcon = byId('muteIcon');
   const zeroVolumeIcon = byId('zeroVolumeIcon');
+  const welcomeScreen = byId('welcomeScreen');
+  const adminLoginBlock = byId('adminLoginBlock');
+  const adminPasswordInput = byId('adminPasswordInput');
+  const adminGoBtn = byId('adminGoBtn');
 
   if (!cabinetPage || !mainPage || !slideBtn || !cabinetBackBtn || !music || !volumeIcon || !volumeSlider) {
     console.error('Runtime fix: required page elements are missing');
@@ -45,21 +49,44 @@
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   let cabinetHideTimer = 0;
+  let cabinetPrepareTimer = 0;
+
+  const entranceIsComplete = () => (
+    document.documentElement.classList.contains('entrance-complete')
+    || welcomeScreen?.style.display === 'none'
+  );
 
   const setMainControlsVisible = (visible) => {
-    volumeControl?.classList.toggle('visible', visible);
-    infoButton?.classList.toggle('visible', visible);
+    const shouldShow = visible && entranceIsComplete();
+    volumeControl?.classList.toggle('visible', shouldShow);
+    infoButton?.classList.toggle('visible', shouldShow);
     for (const control of [volumeControl, infoButton]) {
       if (!control) continue;
-      control.style.pointerEvents = visible ? '' : 'none';
-      control.setAttribute('aria-hidden', String(!visible));
+      control.style.pointerEvents = shouldShow ? '' : 'none';
+      control.setAttribute('aria-hidden', String(!shouldShow));
     }
-    if (!visible) infoPanel?.classList.remove('visible');
+    if (!shouldShow) infoPanel?.classList.remove('visible');
   };
+
+  const prepareCabinetEntrance = () => {
+    if (cabinetPage.classList.contains('slide-in')) return;
+    clearTimeout(cabinetHideTimer);
+    clearTimeout(cabinetPrepareTimer);
+    cabinetPage.style.display = 'flex';
+    cabinetPage.setAttribute('aria-hidden', 'true');
+    void cabinetPage.offsetWidth;
+    cabinetPrepareTimer = window.setTimeout(() => {
+      if (!cabinetPage.classList.contains('slide-in')) cabinetPage.style.display = 'none';
+    }, 500);
+  };
+
+  slideBtn.addEventListener('click', prepareCabinetEntrance, true);
+  edgeSwipeZone?.addEventListener('mouseenter', prepareCabinetEntrance, true);
 
   const applyCabinetState = () => {
     const open = cabinetPage.classList.contains('slide-in');
     clearTimeout(cabinetHideTimer);
+    clearTimeout(cabinetPrepareTimer);
 
     if (open) {
       cabinetPage.style.display = 'flex';
@@ -85,6 +112,14 @@
     attributes: true,
     attributeFilter: ['class'],
   });
+  new MutationObserver(() => {
+    if (entranceIsComplete() && !cabinetPage.classList.contains('slide-in')) {
+      setMainControlsVisible(true);
+    }
+  }).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
   applyCabinetState();
 
   let touchStartX = null;
@@ -99,6 +134,85 @@
     if (isOpen && touchStartX <= 60 && delta > 50) cabinetBackBtn.click();
     touchStartX = null;
   }, { passive: true });
+
+  if (adminLoginBlock && adminPasswordInput && adminGoBtn) {
+    adminLoginBlock.setAttribute('role', 'dialog');
+    adminLoginBlock.setAttribute('aria-label', 'Вход администратора');
+    adminLoginBlock.setAttribute('aria-hidden', 'true');
+    adminPasswordInput.placeholder = 'Пароль администратора';
+    adminPasswordInput.setAttribute('aria-label', 'Пароль администратора');
+
+    const closeLoginButton = document.createElement('button');
+    closeLoginButton.type = 'button';
+    closeLoginButton.className = 'admin-login-close';
+    closeLoginButton.setAttribute('aria-label', 'Закрыть');
+    closeLoginButton.textContent = '×';
+
+    const loginMessage = document.createElement('span');
+    loginMessage.className = 'admin-login-message';
+    loginMessage.setAttribute('aria-live', 'polite');
+    adminLoginBlock.append(closeLoginButton, loginMessage);
+
+    const closeLogin = () => {
+      adminLoginBlock.style.display = 'none';
+      adminLoginBlock.classList.remove('login-open', 'login-shake');
+      adminLoginBlock.setAttribute('aria-hidden', 'true');
+      adminPasswordInput.value = '';
+      adminPasswordInput.removeAttribute('aria-invalid');
+      loginMessage.textContent = '';
+    };
+
+    const syncLoginVisibility = () => {
+      const visible = adminLoginBlock.style.display !== 'none';
+      adminLoginBlock.classList.toggle('login-open', visible);
+      adminLoginBlock.setAttribute('aria-hidden', String(!visible));
+      if (visible) window.setTimeout(() => adminPasswordInput.focus(), 0);
+    };
+
+    new MutationObserver(syncLoginVisibility).observe(adminLoginBlock, {
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+    syncLoginVisibility();
+
+    closeLoginButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeLogin();
+    }, true);
+
+    adminPasswordInput.addEventListener('input', () => {
+      adminPasswordInput.removeAttribute('aria-invalid');
+      loginMessage.textContent = '';
+    });
+    adminPasswordInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      adminGoBtn.click();
+    });
+
+    adminGoBtn.addEventListener('click', (event) => {
+      if (adminPasswordInput.value === 'onlyv1be') {
+        loginMessage.textContent = 'Проверяем…';
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+      adminPasswordInput.setAttribute('aria-invalid', 'true');
+      loginMessage.textContent = 'Неверный пароль';
+      adminLoginBlock.classList.remove('login-shake');
+      void adminLoginBlock.offsetWidth;
+      adminLoginBlock.classList.add('login-shake');
+      adminPasswordInput.focus();
+      adminPasswordInput.select();
+    }, true);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && adminLoginBlock.style.display !== 'none') closeLogin();
+    }, true);
+  }
 
   const VOLUME_KEY = 'onlyv1be-volume';
   const LAST_VOLUME_KEY = 'onlyv1be-last-volume';
