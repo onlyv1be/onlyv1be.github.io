@@ -8,12 +8,10 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
     <!-- CSS Styles -->
-    <script src="https://unpkg.com/cursor-effects@latest/dist/browser.js"></script>
-    <script src="/assets/entrance-guard.js"></script>
-  <script type="module" crossorigin src="/assets/index-B5jp-R-g.js"></script>
-  <script type="module" src="/assets/runtime-fix.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-C3M4cK_U.css">
-  <link rel="stylesheet" href="/assets/runtime-fix.css">
+    <script src="/assets/js/entrance-guard.js?v=20261021-motion1"></script>
+
+  <script type="module" crossorigin src="/assets/js/main.js?v=20261021-profile1"></script>
+  <link rel="stylesheet" crossorigin href="/assets/css/main.css?v=20261021-profile2">
 </head>
 
 <body>
@@ -77,16 +75,11 @@
                         <img src="/media/images/github.jpg" alt="GitHub">
                         <div class="tooltip">GitHub</div>
                     </a>
-                    <a href="https://steamcommunity.com/id/onlyv1be" target="_self" rel="noopener noreferrer"
-                        class="round-button" aria-label="Steam Profile">
-                        <img src="/media/images/steam.jpg" alt="Steam">
-                        <div class="tooltip">Steam</div>
-                    </a>
                 </div>
             </div>
 
-            <div class="viewers-counter" id="viewersCounter">
-                <span id="viewsValue">0</span>
+            <div class="viewers-counter unavailable" id="viewersCounter" aria-label="Просмотры">
+                <span id="viewsValue">—</span>
                 <svg class="eye" width="16" height="16" viewBox="0 0 24 24" style="vertical-align: middle;">
                     <ellipse cx="12" cy="12" rx="10" ry="5" fill="none" stroke="#fff" stroke-width="2"
                         filter="url(#glow)" />
@@ -107,7 +100,8 @@
 
     <div class="controls-container">
         <div class="control-item volume-control" id="volumeControl">
-            <svg class="control-icon" id="volumeIcon" viewBox="0 0 24 24">
+            <svg class="control-icon" id="volumeIcon" viewBox="0 0 24 24" role="button" tabindex="0" aria-label="Выключить звук" aria-pressed="false">
+                <g class="volume-glyph">
                 <path
                     d="M3,9H7L12,4V20L7,15H3V9M16.59,12L14,9.41L15.41,8L18,10.59L20.59,8L22,9.41L19.41,12L22,14.59L20.59,16L18,13.41L15.41,16L14,14.59L16.59,12Z"
                     id="muteIcon" style="display: none;" />
@@ -119,6 +113,7 @@
                 <path
                     d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z"
                     id="zeroVolumeIcon" style="display: none;" />
+                </g>
             </svg>
             <input type="range" min="0" max="1" step="0.01" value="0.5" class="volume-slider" id="volumeSlider"
                 aria-label="Volume Control">
@@ -193,7 +188,7 @@
 
             <div class="tab-toolbar">
                 <div>
-                    <span>Всего просмотрено: <span id="cardsCount">0</span></span>
+                    <span>Карточек во вкладке: <span id="cardsCount">—</span></span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button class="sort-btn" id="sortDesc" data-dir="desc" aria-label="Сортировать по убыванию">

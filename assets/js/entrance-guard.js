@@ -1,26 +1,76 @@
 (() => {
   'use strict';
 
+  const apiDebug = new URLSearchParams(window.location.search).get('debug') === 'api';
+  window.__onlyv1beApiDebug = apiDebug;
+  const debugApi = (event, details) => {
+    if (apiDebug) console.info(`[API debug] ${event}`, JSON.stringify(details));
+  };
+
   // Admin access lasts only until the page is reloaded.
   sessionStorage.removeItem('onlyv1be-admin-token');
 
-  // Do not let an unavailable API leave the UI waiting forever.
+  // Retry read-only API requests because some networks reset the first TLS
+  // connections. Mutating requests are never retried to avoid duplicate writes.
   if (!window.__onlyv1beFetchGuard) {
     window.__onlyv1beFetchGuard = true;
     const nativeFetch = window.fetch.bind(window);
-    window.fetch = (resource, options = {}) => {
-      const url = typeof resource === 'string' ? resource : resource?.url || '';
-      if (!url.startsWith('https://oxae.run.place/')) return nativeFetch(resource, options);
+    const API_PREFIX = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
+      ? `${location.origin}/api/`
+      : 'https://oxae.run.place/';
+    // The local proxy can retry upstream TLS failures before replying.
+    const REQUEST_TIMEOUT_MS = API_PREFIX.startsWith(location.origin + '/') ? 16000 : 7000;
+    const GET_ATTEMPTS = 3;
 
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 7000);
-      if (options.signal) {
-        if (options.signal.aborted) controller.abort();
-        else options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+    window.fetch = async (resource, options = {}) => {
+      const url = typeof resource === 'string' ? resource : resource?.url || '';
+      if (!url.startsWith(API_PREFIX)) return nativeFetch(resource, options);
+
+      const method = String(options.method || resource?.method || 'GET').toUpperCase();
+      const attempts = method === 'GET' ? GET_ATTEMPTS : 1;
+      let lastError;
+
+      for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        const startedAt = performance.now();
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+        const abortFromCaller = () => controller.abort();
+
+        if (options.signal) {
+          if (options.signal.aborted) controller.abort();
+          else options.signal.addEventListener('abort', abortFromCaller, { once: true });
+        }
+
+        try {
+          debugApi('request', { method, url, attempt, attempts });
+          const response = await nativeFetch(resource, { ...options, signal: controller.signal });
+          debugApi('response', {
+            method,
+            url,
+            attempt,
+            status: response.status,
+            elapsedMs: Math.round(performance.now() - startedAt)
+          });
+          return response;
+        } catch (error) {
+          lastError = error;
+          debugApi('failure', {
+            method,
+            url,
+            attempt,
+            name: error?.name || 'Error',
+            message: error?.message || String(error),
+            elapsedMs: Math.round(performance.now() - startedAt)
+          });
+          if (options.signal?.aborted || attempt === attempts) throw error;
+          await new Promise((resolve) => window.setTimeout(resolve, attempt * 300));
+        } finally {
+          clearTimeout(timeout);
+          options.signal?.removeEventListener('abort', abortFromCaller);
+        }
       }
 
-      return nativeFetch(resource, { ...options, signal: controller.signal })
-        .finally(() => clearTimeout(timeout));
+      throw lastError;
     };
   }
 
