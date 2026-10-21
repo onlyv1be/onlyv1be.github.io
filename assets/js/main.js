@@ -3,7 +3,7 @@ const byId = id => document.getElementById(id);
 const waitForAnimation = duration => new Promise(resolve => setTimeout(resolve, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : duration));
 const API_URL = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
   ? location.origin
-  : "https://story.politcore.ru/oxae-api";
+  : "https://oxae.run.place";
 const TITLE_FRAMES = ["@onlyv1be", "@onlyv1b", "@onlyv1", "@onlyv", "@only", "@onl", "@on", "@o", "@", "@o", "@on", "@onl", "@only", "@onlyv", "@onlyv1", "@onlyv1b", "@onlyv1be"];
 const STORAGE_KEYS = {
   activeTab: "onlyv1be-active-tab"
@@ -118,7 +118,7 @@ function initEntrance(elements, onComplete) {
       document.documentElement.requestFullscreen?.().catch(() => {});
       elements.welcomeScreen.classList.add("fade-out");
       elements.loadingText.classList.add("visible");
-      elements.music.play().catch(() => {});
+      elements.video.play().catch(() => {});
       await waitForAnimation(260);
       elements.welcomeScreen.style.display = "none";
       elements.loadingText.classList.add("fade-out");
@@ -419,7 +419,6 @@ function initCabinet(elements) {
       elements.slideBtn.style.display = "none";
       elements.cabinetBackBtn.style.display = "flex";
       elements.edgeSwipeZoneLeft.style.display = "block";
-      elements.music.pause();
       elements.video.pause();
     } finally {
       openingCabinet = false;
@@ -433,7 +432,6 @@ function initCabinet(elements) {
     elements.slideBtn.style.display = "flex";
     elements.cabinetBackBtn.style.display = "none";
     elements.edgeSwipeZoneLeft.style.display = "none";
-    elements.music.play().catch(() => {});
     elements.video.play().catch(() => {});
   };
   elements.slideBtn.addEventListener("click", event => {
@@ -451,10 +449,10 @@ function initCabinet(elements) {
   loadTabs().then(tabs => Promise.all(tabs.map(tab => preloadImages(tab.id))))
     .catch(error => console.error("Не удалось подготовить изображения карточек:", error));
 }
-const ELEMENT_IDS = ["welcomeScreen", "loadingText", "mainContent", "mainPage", "cabinetPage", "backgroundMusic", "volumeControl", "infoButton", "infoPanel", "pageTitle", "slideBtn", "cabinetTabs", "addTabBtn", "cabinetContent", "cabinetBackBtn", "tabEditPanel", "tabTitleEdit", "saveTabEditBtn", "closeTabEditBtn", "cardEditPanel", "cardTitleEdit", "cardImgEdit", "cardRatingEdit", "saveCardBtnText", "saveCardEditBtn", "closeCardEditBtn", "edgeSwipeZone", "edgeSwipeZoneLeft", "viewersCounter", "viewsValue", "neonTypeEffect", "adminLoginBlock", "adminPasswordInput", "adminGoBtn", "cardsCount", "sortDesc", "sortAsc"];
+const ELEMENT_IDS = ["welcomeScreen", "loadingText", "mainContent", "mainPage", "cabinetPage", "volumeControl", "infoButton", "infoPanel", "pageTitle", "slideBtn", "cabinetTabs", "addTabBtn", "cabinetContent", "cabinetBackBtn", "tabEditPanel", "tabTitleEdit", "saveTabEditBtn", "closeTabEditBtn", "cardEditPanel", "cardTitleEdit", "cardImgEdit", "cardRatingEdit", "saveCardBtnText", "saveCardEditBtn", "closeCardEditBtn", "edgeSwipeZone", "edgeSwipeZoneLeft", "viewersCounter", "viewsValue", "neonTypeEffect", "adminLoginBlock", "adminPasswordInput", "adminGoBtn", "cardsCount", "sortDesc", "sortAsc"];
 const elements = Object.fromEntries(ELEMENT_IDS.map(id => [id, byId(id)]));
 elements.video = byId("background-video");
-elements.music = elements.backgroundMusic;
+
 document.oncontextmenu = () => false;
 document.addEventListener("click", event => {
   const effect = document.createElement("div");
@@ -513,7 +511,7 @@ setInterval(() => {
   const infoButton = byId('infoButton');
   const infoPanel = byId('infoPanel');
   const viewersCounter = byId('viewersCounter');
-  const music = byId('backgroundMusic');
+  const media = byId('background-video');
   const volumeIcon = byId('volumeIcon');
   const volumeSlider = byId('volumeSlider');
   const highVolumeIcon = byId('highVolumeIcon');
@@ -528,7 +526,7 @@ setInterval(() => {
   const cabinetTabs = byId('cabinetTabs');
   const addTabButton = byId('addTabBtn');
 
-  if (!cabinetPage || !mainPage || !slideBtn || !cabinetBackBtn || !music || !volumeIcon || !volumeSlider) {
+  if (!cabinetPage || !mainPage || !slideBtn || !cabinetBackBtn || !media || !volumeIcon || !volumeSlider) {
     console.error('Runtime fix: required page elements are missing');
     return;
   }
@@ -776,6 +774,22 @@ setInterval(() => {
   }
 
   const VOLUME_KEY = 'onlyv1be-volume';
+  // Mouse clicks retain focus, so expand for keyboard focus explicitly instead
+  // of using :focus-within, which kept the slider open after pointerleave.
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab' && volumeControl.contains(document.activeElement)) {
+      volumeControl.classList.add('keyboard-focus');
+    }
+  });
+  volumeControl.addEventListener('focusin', (event) => {
+    volumeControl.classList.toggle('keyboard-focus', event.target.matches(':focus-visible'));
+  });
+  document.addEventListener('pointerdown', () => {
+    volumeControl.classList.remove('keyboard-focus');
+  }, true);
+  volumeControl.addEventListener('focusout', (event) => {
+    if (!volumeControl.contains(event.relatedTarget)) volumeControl.classList.remove('keyboard-focus');
+  });
   const LAST_VOLUME_KEY = 'onlyv1be-last-volume';
   const MUTED_KEY = 'onlyv1be-muted';
   const icons = [highVolumeIcon, lowVolumeIcon, muteIcon, zeroVolumeIcon].filter(Boolean);
@@ -799,15 +813,15 @@ setInterval(() => {
   const renderVolume = (value) => {
     const shownValue = clamp(Number(value) || 0, 0, 1);
     icons.forEach((icon) => { icon.style.display = 'none'; });
-    const activeIcon = music.muted || shownValue <= 0.001
+    const activeIcon = media.muted || shownValue <= 0.001
       ? muteIcon
       : shownValue > 0.5
         ? highVolumeIcon
         : lowVolumeIcon;
     if (activeIcon) activeIcon.style.display = 'block';
     volumeSlider.style.setProperty('--volume-fill', `${shownValue * 100}%`);
-    volumeIcon.setAttribute('aria-label', music.muted || shownValue <= 0.001 ? 'Включить звук' : 'Выключить звук');
-    volumeIcon.setAttribute('aria-pressed', String(music.muted || shownValue <= 0.001));
+    volumeIcon.setAttribute('aria-label', media.muted || shownValue <= 0.001 ? 'Включить звук' : 'Выключить звук');
+    volumeIcon.setAttribute('aria-pressed', String(media.muted || shownValue <= 0.001));
   };
 
   const animateSlider = (target) => {
@@ -831,9 +845,9 @@ setInterval(() => {
   const savedVolume = clamp(Number(read(VOLUME_KEY, 0.5)), 0, 1);
   const savedMuted = Boolean(read(MUTED_KEY, false));
   if (savedVolume > 0.001) lastAudibleVolume = savedVolume;
-  music.volume = savedMuted ? lastAudibleVolume : savedVolume;
-  music.muted = savedMuted || savedVolume <= 0.001;
-  volumeSlider.value = String(music.muted ? 0 : music.volume);
+  media.volume = savedMuted ? lastAudibleVolume : savedVolume;
+  media.muted = savedMuted || savedVolume <= 0.001;
+  volumeSlider.value = String(media.muted ? 0 : media.volume);
   renderVolume(Number(volumeSlider.value));
 
   volumeIcon.addEventListener('click', (event) => {
@@ -843,24 +857,24 @@ setInterval(() => {
     bounceVolumeIcon();
     const sliderValue = Number(volumeSlider.value);
 
-    if (!music.muted && sliderValue > 0.001) {
-      lastAudibleVolume = clamp(music.volume || sliderValue, 0.01, 1);
+    if (!media.muted && sliderValue > 0.001) {
+      lastAudibleVolume = clamp(media.volume || sliderValue, 0.01, 1);
       write(LAST_VOLUME_KEY, lastAudibleVolume);
       write(VOLUME_KEY, 0);
       write(MUTED_KEY, true);
-      music.muted = true;
+      media.muted = true;
       animateSlider(0);
       return;
     }
 
     const restored = clamp(lastAudibleVolume || 0.5, 0.01, 1);
-    music.volume = restored;
-    music.muted = false;
+    media.volume = restored;
+    media.muted = false;
     write(VOLUME_KEY, restored);
     write(LAST_VOLUME_KEY, restored);
     write(MUTED_KEY, false);
     animateSlider(restored);
-    music.play().catch(() => {});
+    media.play().catch(() => {});
   }, true);
 
   volumeIcon.addEventListener('keydown', (event) => {
@@ -875,12 +889,12 @@ setInterval(() => {
     const value = clamp(Number(volumeSlider.value), 0, 1);
 
     if (value <= 0.001) {
-      music.muted = true;
+      media.muted = true;
       write(VOLUME_KEY, 0);
       write(MUTED_KEY, true);
     } else {
-      music.volume = value;
-      music.muted = false;
+      media.volume = value;
+      media.muted = false;
       lastAudibleVolume = value;
       write(VOLUME_KEY, value);
       write(LAST_VOLUME_KEY, value);

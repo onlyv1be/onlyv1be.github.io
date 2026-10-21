@@ -1704,7 +1704,7 @@ html.entrance-pending .controls-container .control-item {
 }
 
 .volume-control:hover,
-.volume-control:focus-within {
+.volume-control.keyboard-focus {
   width: 172px !important;
 }
 
@@ -1718,7 +1718,7 @@ html.entrance-pending .controls-container .control-item {
 }
 
 .volume-control:hover .volume-slider,
-.volume-control:focus-within .volume-slider {
+.volume-control.keyboard-focus .volume-slider {
   width: 102px !important;
   opacity: 1 !important;
 }
