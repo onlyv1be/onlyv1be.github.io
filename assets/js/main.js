@@ -111,6 +111,7 @@ function writeStorage(key, value) {
   }
 }
 function initEntrance(elements, onComplete) {
+  const INTRO_DURATION_MS = 12200;
   let started = false;
   const enter = async () => {
     if (!started) {
@@ -118,17 +119,56 @@ function initEntrance(elements, onComplete) {
       document.documentElement.requestFullscreen?.().catch(() => {});
       elements.welcomeScreen.classList.add("fade-out");
       elements.loadingText.classList.add("visible");
-      elements.video.play().catch(() => {});
-      await waitForAnimation(260);
+      elements.audio.muted = false;
+      if (elements.audio.volume <= 0) elements.audio.volume = .5;
+      const slider = byId("volumeSlider");
+      slider.value = String(elements.audio.volume);
+      slider.dispatchEvent(new Event("input", { bubbles: true }));
+      elements.audio.play().catch(() => {});
       elements.welcomeScreen.style.display = "none";
+      // A wall-clock deadline keeps the intro at 12.2 seconds, independently of
+      // animation preferences, frame rate, and network requests.
+      await new Promise(resolve => {
+        const deadline = performance.now() + INTRO_DURATION_MS;
+        const progress = byId("loadingProgress");
+        const skipButton = byId("loadingSkip");
+        let frame;
+        const updateProgress = () => {
+          progress.style.transform = `scaleX(${Math.max(0, (deadline - performance.now()) / INTRO_DURATION_MS)})`;
+          frame = requestAnimationFrame(updateProgress);
+        };
+        const finish = () => {
+          clearTimeout(timeout);
+          cancelAnimationFrame(frame);
+          document.removeEventListener("keydown", skip);
+          skipButton.removeEventListener("click", skipAudio);
+          resolve();
+        };
+        const skipAudio = () => {
+          // Seeking can happen before metadata arrives on a slow connection.
+          const seek = () => { elements.audio.currentTime = INTRO_DURATION_MS / 1000; };
+          if (elements.audio.readyState >= 1) seek();
+          else elements.audio.addEventListener("loadedmetadata", seek, { once: true });
+          finish();
+        };
+        const skip = event => {
+          if (event.code !== "Space") return;
+          event.preventDefault();
+          skipAudio();
+        };
+        const timeout = setTimeout(finish, INTRO_DURATION_MS);
+        document.addEventListener("keydown", skip);
+        skipButton.addEventListener("click", skipAudio);
+        updateProgress();
+      });
       elements.loadingText.classList.add("fade-out");
-      await waitForAnimation(180);
-      elements.loadingText.style.display = "none";
       elements.video.style.visibility = "visible";
+      elements.video.muted = true;
       elements.video.play().catch(() => {});
       elements.video.classList.add("visible");
       elements.mainContent.classList.add("active");
       elements.viewersCounter.classList.add("active");
+      setTimeout(() => { elements.loadingText.style.display = "none"; }, 320);
       await waitForAnimation(420);
       elements.volumeControl.classList.add("visible");
       await waitForAnimation(150);
@@ -420,6 +460,7 @@ function initCabinet(elements) {
       elements.cabinetBackBtn.style.display = "flex";
       elements.edgeSwipeZoneLeft.style.display = "block";
       elements.video.pause();
+      elements.audio.pause();
     } finally {
       openingCabinet = false;
       elements.slideBtn.removeAttribute("aria-busy");
@@ -433,6 +474,7 @@ function initCabinet(elements) {
     elements.cabinetBackBtn.style.display = "none";
     elements.edgeSwipeZoneLeft.style.display = "none";
     elements.video.play().catch(() => {});
+    elements.audio.play().catch(() => {});
   };
   elements.slideBtn.addEventListener("click", event => {
     event.stopPropagation();
@@ -452,6 +494,7 @@ function initCabinet(elements) {
 const ELEMENT_IDS = ["welcomeScreen", "loadingText", "mainContent", "mainPage", "cabinetPage", "volumeControl", "infoButton", "infoPanel", "pageTitle", "slideBtn", "cabinetTabs", "addTabBtn", "cabinetContent", "cabinetBackBtn", "tabEditPanel", "tabTitleEdit", "saveTabEditBtn", "closeTabEditBtn", "cardEditPanel", "cardTitleEdit", "cardImgEdit", "cardRatingEdit", "saveCardBtnText", "saveCardEditBtn", "closeCardEditBtn", "edgeSwipeZone", "edgeSwipeZoneLeft", "viewersCounter", "viewsValue", "neonTypeEffect", "adminLoginBlock", "adminPasswordInput", "adminGoBtn", "cardsCount", "sortDesc", "sortAsc"];
 const elements = Object.fromEntries(ELEMENT_IDS.map(id => [id, byId(id)]));
 elements.video = byId("background-video");
+elements.audio = byId("backgroundMusic");
 
 document.oncontextmenu = () => false;
 document.addEventListener("click", event => {
@@ -511,7 +554,7 @@ setInterval(() => {
   const infoButton = byId('infoButton');
   const infoPanel = byId('infoPanel');
   const viewersCounter = byId('viewersCounter');
-  const media = byId('background-video');
+  const media = byId('backgroundMusic');
   const volumeIcon = byId('volumeIcon');
   const volumeSlider = byId('volumeSlider');
   const highVolumeIcon = byId('highVolumeIcon');

@@ -8,10 +8,10 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
     <!-- CSS Styles -->
-    <script src="/assets/js/entrance-guard.js?v=20261021-api3"></script>
+    <script src="/assets/js/entrance-guard.js?v=20261021-api4-intro122"></script>
 
-  <script type="module" crossorigin src="/assets/js/main.js?v=20261021-video-audio-api3"></script>
-  <link rel="stylesheet" crossorigin href="/assets/css/main.css?v=20261021-video-audio1">
+  <script type="module" crossorigin src="/assets/js/main.js?v=20261021-api4-intro122"></script>
+  <link rel="stylesheet" crossorigin href="/assets/css/main.css?v=20261021-spacebadge4">
 </head>
 
 <body>
@@ -51,7 +51,13 @@
         click to enter...
     </div>
 
-    <div class="loading-text" id="loadingText">loading</div>
+    <div class="loading-text" id="loadingText" aria-label="Загрузка">
+        <span class="loading-label">loading<span class="loading-dots" aria-hidden="true"></span></span>
+        <button class="loading-skip" id="loadingSkip" type="button" aria-label="Пропустить вступление — Space">
+            <span class="loading-progress" aria-hidden="true"><span id="loadingProgress"></span></span>
+            <span class="loading-space">space</span>
+        </button>
+    </div>
 
     <div class="main-page" id="mainPage">
         <div class="tilt-wrapper" id="mainContent">
@@ -128,13 +134,12 @@
     </div>
 
     <div class="info-panel" id="infoPanel" role="dialog" aria-labelledby="infoPanelTitle">
-        <strong id="infoPanelTitle">2019-2025:</strong>
+        <strong id="infoPanelTitle">2019-2026:</strong>
         <ul>
-            <li>Лидер клана EZ</li>
-            <li>Участник BobrIT Junior</li>
-            <li>Бывший участник клана FNK</li>
-            <li>Бывший участник клана Tobleron</li>
-            <li>Бывший участник клана Gibel</li>
+            <li>Разработчик PolitCore</li>
+            <li>Лидер Клана Ez</li>
+            <li>Тех. Администратор FoxRP</li>
+            <li>Тех. Администратор EliteRP</li>
         </ul>
     </div>
 
@@ -219,6 +224,7 @@
     </div>
 
 
+    <audio id="backgroundMusic" src="/media/audio/entrance.weba" preload="auto" loop></audio>
 </body>
 
 </html>
