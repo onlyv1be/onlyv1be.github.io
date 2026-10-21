@@ -17,7 +17,7 @@
     const nativeFetch = window.fetch.bind(window);
     const API_PREFIX = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
       ? `${location.origin}/api/`
-      : 'https://oxae.run.place/';
+      : 'https://story.politcore.ru/oxae-api/';
     // The local proxy can retry upstream TLS failures before replying.
     const REQUEST_TIMEOUT_MS = API_PREFIX.startsWith(location.origin + '/') ? 16000 : 7000;
     const GET_ATTEMPTS = 3;

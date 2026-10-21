@@ -3,7 +3,7 @@ const byId = id => document.getElementById(id);
 const waitForAnimation = duration => new Promise(resolve => setTimeout(resolve, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : duration));
 const API_URL = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
   ? location.origin
-  : "https://oxae.run.place";
+  : "https://story.politcore.ru/oxae-api";
 const TITLE_FRAMES = ["@onlyv1be", "@onlyv1b", "@onlyv1", "@onlyv", "@only", "@onl", "@on", "@o", "@", "@o", "@on", "@onl", "@only", "@onlyv", "@onlyv1", "@onlyv1b", "@onlyv1be"];
 const STORAGE_KEYS = {
   activeTab: "onlyv1be-active-tab"
